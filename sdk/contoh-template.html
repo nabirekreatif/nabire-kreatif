@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Contoh Template Web Berlisensi</title>
+<!-- 1) Konfigurasi + pengaman lisensi: paling atas di <head>.
+     Ganti dua baris ini dengan "Kode Pasang" dari Admin → Lisensi Template. -->
+<script src="nk-license.js"></script>
+<style>
+  body{margin:0;font-family:system-ui,sans-serif;background:#f6f8fb;color:#0f172a}
+  header{padding:48px 20px;text-align:center;background:#0A4C7A;color:#fff}
+  main{max-width:720px;margin:0 auto;padding:28px 20px}
+  .card{background:#fff;border-radius:16px;padding:20px;box-shadow:0 4px 16px rgba(0,0,0,.08)}
+</style>
+</head>
+<body>
+<header><h1 id="judul">Template Web Anda</h1><p>Halaman ini hanya tampil bila lisensi domain valid.</p></header>
+<main><div class="card" id="isi"><h2>Konten Rahasia Template</h2><p>Aplikasi template berjalan setelah <code>NKLicense.ready</code> terpenuhi.</p></div></main>
+<script>
+  /* 2) Jalankan aplikasi template Anda hanya setelah lisensi terbukti. */
+  NKLicense.ready.then(function () {
+    document.getElementById('judul').textContent = 'Template aktif di ' + NKLicense.host;
+  });
+</script>
+</body>
+</html>

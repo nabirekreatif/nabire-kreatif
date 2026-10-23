@@ -1,0 +1,114 @@
+/* Area Member: beranda, produk, kelas (player), riwayat, klaim kode, profil */
+(function (w) {
+  'use strict';
+  const N = w.NK, { esc, rp, ic, ACT, FORM, INPUT, route, go, toast, api, safeUrl, S } = N, P = w.NKP;
+  const MS = { cls: '', les: {}, claiming: false };
+
+  /* progres belajar: disimpan lokal per akun (ringan, tanpa panggilan server) */
+  const progKey = () => 'nk.prog.' + (S.session ? S.session.email : '');
+  function prog() { try { return JSON.parse(localStorage.getItem(progKey()) || '{}'); } catch (e) { return {}; } }
+  function setProg(id, on) { const p = prog(); if (on) p[id] = 1; else delete p[id]; try { localStorage.setItem(progKey(), JSON.stringify(p)); } catch (e) { } }
+
+  const statusPill = s => s === 'Disetujui' ? '<span class="pill ok">' + ic('check', 'sm') + 'Akses Aktif</span>' : s === 'Ditolak' ? '<span class="pill err">Ditolak</span>' : '<span class="pill warn">' + ic('clock', 'sm') + 'Menunggu Verifikasi</span>';
+
+  function assetCard(p) {
+    const link = safeUrl(p.link_unduh), pdf = p.tipe_file === 'pdf' ? N.pdfEmbed(link) : '', img = safeUrl(p.cover_url);
+    if (p.tipe_file === 'template') {
+      const L = p.lisensi || { aktif: [], maks: 1 }, hasK = !!L.kode;
+      const doms = (L.aktif || []).map(a => '<div class="row between lic-d"><span class="mono small">' + esc(a.domain) + '<small class="muted"> · ' + N.dt(a.tgl) + '</small></span><button class="btn ghost xs" data-act="lic-release" data-id="' + esc(a.id) + '" data-d="' + esc(a.domain) + '">' + ic('x', 'sm') + 'Lepas</button></div>').join('');
+      return '<article class="card mcard"><div class="cover">' + (img ? '<img src="' + esc(img) + '" alt="" loading="lazy" decoding="async">' : ic('code', 'lg')) + '<span class="chip">Template Web</span><span class="chip r">' + (L.dicabut ? 'Lisensi Dicabut' : ic('check', 'sm') + 'Berlisensi') + '</span></div><div class="mcard-b"><h4>' + esc(p.judul) + '</h4>' +
+        (L.dicabut ? '<div class="alert err">' + ic('alert') + '<span>Lisensi ini dicabut oleh admin. Hubungi admin untuk bantuan.</span></div>' : '') +
+        (link ? '<div class="row wrap"><a class="btn pri grow" href="' + esc(link) + '" target="_blank" rel="noopener">' + ic('download', 'sm') + 'Unduh Template</a></div>' : '<div class="alert">' + ic('alert') + '<span>Link unduhan template belum diisi admin.</span></div>') +
+        (hasK ? '<div class="lic"><div class="small bold">Kode lisensi Anda</div><div class="code" style="margin-top:6px"><span>' + esc(L.kode) + '</span><button data-act="copy" data-v="' + esc(L.kode) + '" aria-label="Salin kode">' + ic('copy', 'sm') + '</button></div>' +
+          '<div class="small bold" style="margin-top:12px">Domain aktif <span class="pill">' + (L.aktif || []).length + '/' + (L.maks || 1) + '</span></div>' + (doms ? '<div class="col" style="gap:6px;margin-top:6px">' + doms + '</div>' : '<p class="small muted" style="margin:6px 0 0">Belum ada domain. Pasang template di domain Anda, buka halamannya, lalu masukkan kode di atas.</p>') +
+          '<p class="hint" style="margin-top:10px">Satu kode berlaku untuk ' + (L.maks || 1) + ' domain. Pindah domain? Tekan “Lepas” pada domain lama, lalu aktifkan di domain baru.</p></div>' : '<div class="alert">' + ic('info') + '<span>Kode lisensi muncul di sini setelah akses disetujui.</span></div>') + '</div></article>';
+    }
+    if (p.tipe_file === 'linkbio') return '<article class="card mcard"><div class="cover">' + (img ? '<img src="' + esc(img) + '" alt="" loading="lazy" decoding="async">' : ic('link', 'lg')) + '<span class="chip">Link Bio</span><span class="chip r">' + ic('check', 'sm') + 'Akses Terbuka</span></div><div class="mcard-b"><h4>' + esc(p.judul) + '</h4><p class="small muted">Atur profil, warna, media sosial, dan hingga 6 produk di halaman Link Bio Anda.</p><a class="btn pri block" href="#/saya/linkbio">' + ic('edit', 'sm') + 'Buka Editor Link Bio</a></div></article>';
+    return '<article class="card mcard"><div class="cover">' + (img ? '<img src="' + esc(img) + '" alt="" loading="lazy" decoding="async">' : ic('file', 'lg')) + '<span class="chip">' + (pdf ? 'PDF Interaktif' : 'File / Link Unduhan') + '</span><span class="chip r">' + ic('check', 'sm') + 'Akses Terbuka</span></div><div class="mcard-b"><h4>' + esc(p.judul) + '</h4><p class="small muted" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + esc(p.deskripsi) + '</p><div class="info"><span>Akses: ' + N.dt(p.tgl_akses) + '</span><span>' + (p.sumber === 'kode' ? 'Via Kode' : 'Via Pembayaran') + '</span></div>' +
+      (link ? '<div class="row wrap">' + (pdf ? '<button class="btn nav grow" data-act="pdf-open" data-id="' + esc(p.id) + '">' + ic('eye', 'sm') + 'Buka PDF</button>' : '<a class="btn pri grow" href="' + esc(link) + '" target="_blank" rel="noopener">' + ic('ext', 'sm') + 'Buka Link Produk</a>') + '<a class="btn soft" href="' + esc(N.dlUrl(link)) + '" target="_blank" rel="noopener">' + ic('download', 'sm') + 'Unduh</a><button class="btn soft" data-act="copy" data-v="' + esc(link) + '" aria-label="Salin link">' + ic('copy', 'sm') + '</button></div>' : '<div class="alert">' + ic('alert') + '<span>Link produk belum diisi admin. Hubungi admin bila perlu.</span></div>') + '</div></article>';
+  }
+
+  N.ACT['lic-release'] = async el => {
+    const id = el.getAttribute('data-id'), dom = el.getAttribute('data-d');
+    if (!await N.confirmBox('Lepas domain ' + dom + '? Template di domain itu akan terkunci kembali pada pengecekan berikutnya (≤24 jam). Pelepasan dibatasi 3 kali per 30 hari.', { ok: 'Lepas Domain', danger: true })) return;
+    N.busy(el, true); const r = await api('license.release', { id: id }); N.busy(el, false);
+    if (!r.success) return toast(r.message || 'Gagal melepas domain.', 'err', 5000);
+    N.sset('u', 'boot', r.data); N.softRender(); toast('Domain ' + dom + ' dilepas.', 'ok');
+  };
+
+  function player(cls) {
+    const les = cls.lessons || [], pr = prog(), cur = les.find(l => l.id === MS.les[cls.id]) || les.find(l => !pr[l.id]) || les[0];
+    if (!les.length) return '<div class="card empty">' + ic('video') + '<p>Materi video kelas ini belum ditambahkan admin.</p></div>';
+    const done = les.filter(l => pr[l.id]).length, pct = Math.round(done / les.length * 100), emb = cur ? N.ytEmbed(cur.link_youtube) : '';
+    return '<div class="card"><div class="row between wrap" style="margin-bottom:12px"><div><h3 style="font-size:18px">' + esc(cls.judul) + '</h3></div><span class="mono small" style="color:var(--orange-d)">Progres: ' + done + '/' + les.length + ' selesai (' + pct + '%)</span></div><div class="player"><div><div class="vid" id="vid" data-emb="' + esc(emb) + '"><div class="poster" data-act="vid-play" role="button" aria-label="Putar video"><div class="col" style="align-items:center;gap:12px"><div class="pl">' + ic('play') + '</div><span class="mono small">' + (emb ? 'Ketuk untuk memutar' : 'Video belum tersedia') + '</span></div></div></div><div class="row between wrap" style="margin-top:14px;align-items:flex-start"><h3 class="h3" style="font-size:18px;flex:1;min-width:200px">Pelajaran ' + cur.urutan + ': ' + esc(cur.judul) + '</h3><button class="btn ' + (pr[cur.id] ? 'soft' : 'out') + ' sm" data-act="lesson-done" data-id="' + esc(cur.id) + '">' + ic('check', 'sm') + (pr[cur.id] ? 'Selesai ✓' : 'Tandai Selesai') + '</button></div><p class="small muted" style="margin-top:8px;white-space:pre-line">' + esc(cur.deskripsi) + '</p></div><div><div class="row between"><b>Daftar Modul Belajar</b><span class="tiny muted mono">' + les.length + ' Video</span></div><div class="prog" style="margin:10px 0 12px"><i style="width:' + pct + '%"></i></div><div class="col" style="gap:8px;max-height:430px;overflow:auto">' + les.map((l, i) => '<button class="lsn ' + (l.id === cur.id ? 'on' : '') + ' ' + (pr[l.id] ? 'done' : '') + '" data-act="lesson-pick" data-id="' + esc(l.id) + '" data-c="' + esc(cls.id) + '"><span class="n">' + (pr[l.id] ? ic('check', 'sm') : (l.urutan || i + 1)) + '</span><span class="grow"><b>' + (l.urutan || i + 1) + '. ' + esc(l.judul) + '</b><span>Durasi: ' + esc(l.durasi || '-') + (pr[l.id] ? ' · Selesai' : l.id === cur.id ? ' · Sedang dipelajari' : '') + '</span></span>' + ic('play', 'sm') + '</button>').join('') + '</div></div></div></div>';
+  }
+
+  function orderRow(o) {
+    return '<div class="ap" style="align-items:flex-start"><div class="inf"><div class="row wrap"><b>' + esc(o.judul_produk) + '</b><span class="pill mono">' + esc(o.kode_order) + '</span></div><div class="small muted mono" style="margin-top:2px">' + N.dtm(o.tgl_pesan) + ' · ' + esc(o.metode) + ' · <b style="color:var(--navy)">' + rp(o.total) + '</b></div>' + (o.status === 'Ditolak' && o.catatan ? '<div class="alert err mt" style="margin-top:8px">' + ic('alert') + '<span>Alasan penolakan: ' + esc(o.catatan) + '</span></div>' : '') + (o.status === 'Disetujui' && o.kode_akses ? '<div class="code" style="margin-top:8px;max-width:340px"><span>' + esc(o.kode_akses) + '</span><button data-act="copy" data-v="' + esc(o.kode_akses) + '" aria-label="Salin kode">' + ic('copy', 'sm') + '</button></div>' : '') + '</div><div class="col" style="align-items:flex-end;gap:8px">' + statusPill(o.status) + '<div class="row">' + (o.ada_bukti ? '<button class="btn soft xs" data-act="bukti-lihat" data-id="' + esc(o.id) + '">' + ic('eye', 'sm') + 'Bukti</button>' : '') + (o.status === 'Disetujui' ? '<button class="btn soft xs" data-act="invoice" data-id="' + esc(o.id) + '">' + ic('receipt', 'sm') + 'Invoice</button>' : '') + '</div></div></div>';
+  }
+
+  function memberPage() {
+    return {
+      layout: 'mem', auth: 'member', title: 'Area Member', anchor: m => (m[1] === 'klaim' ? 'claim' : ''),
+      render(m, q) {
+        const tab = m[1] || '';
+        const b = N.use('boot', { ttl: 60000 }) || N.bootData(), me = S.session;
+        if (!b) return '<div class="sk" style="height:140px"></div><div class="sk mt" style="height:120px"></div><div class="g3 mt">' + '<div class="card"><div class="sk" style="height:120px"></div></div>'.repeat(2) + '</div>';
+        const lib = b.library || [], dig = lib.filter(p => p.tipe !== 'kelas'), kls = lib.filter(p => p.tipe === 'kelas'), ord = b.orders || [], pend = ord.filter(o => o.status === 'Menunggu').length;
+        const pr = b.profile || {}, code = P.SS.get('nk.code') || '';
+        let cid = m[2] && m[1] === 'kelas' ? m[2] : MS.cls; if (!kls.find(k => k.id === cid)) cid = kls[0] ? kls[0].id : '';
+        const hero = '<div class="mhero"><div class="row" style="gap:16px;position:relative;z-index:1"><div class="av">' + (safeUrl(pr.foto) ? '<img src="' + esc(safeUrl(pr.foto)) + '" alt="">' : esc(N.initials(pr.nama))) + '</div><div style="min-width:0"><div class="row wrap" style="gap:8px"><h2>' + esc(pr.nama) + '</h2><span class="pill" style="background:rgba(255,255,255,.14);color:#ffcf9b">' + ic('star', 'sm') + 'MEMBER</span></div><div class="em">' + esc(pr.email) + ' · Terdaftar sejak ' + N.dt(pr.tgl_daftar) + '</div></div></div><div class="mst"><div><b>' + dig.length + '</b><span>Produk Digital</span></div><div><b>' + kls.length + '</b><span>Kelas Aktif</span></div><div><b class="g">' + (pend ? pend : '100%') + '</b><span>' + (pend ? 'Menunggu verifikasi' : 'Akses Sah') + '</span></div></div></div>';
+        const claim = '<div class="card claim mt" id="claim" style="margin-top:18px"><div class="row" style="gap:14px"><div class="ico">' + ic('key', 'lg') + '</div><div><div class="eyebrow">Aktivasi instan & sekali pakai</div><h3 style="font-size:20px">Klaim Kode Akses</h3><p class="small muted">Beli voucher via Lynk.id atau offline? Masukkan kode untuk membuka materi & file digital otomatis.</p></div></div><form class="claim-f" data-form="claim"><input class="in mono" name="kode" id="claim-in" data-input="code-up" placeholder="NK-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" value="' + esc(code) + '"><button class="btn pri" type="submit">' + ic('zap', 'sm') + 'Klaim Akses Sekarang</button></form></div>';
+        const tabs = '<div class="tabs mt" style="margin-top:22px"><a class="tab ' + (tab === '' || tab === 'klaim' ? 'on' : '') + '" href="#/saya">' + ic('grid', 'sm') + 'Semua</a><a class="tab ' + (tab === 'aset' ? 'on' : '') + '" href="#/saya/aset">Produk <em>' + dig.length + '</em></a><a class="tab ' + (tab === 'kelas' ? 'on' : '') + '" href="#/saya/kelas">Kelas <em>' + kls.length + '</em></a><a class="tab ' + (tab === 'riwayat' ? 'on' : '') + '" href="#/saya/riwayat">Riwayat <em>' + ord.length + '</em></a><a class="tab ' + (tab === 'profil' ? 'on' : '') + '" href="#/saya/profil">' + ic('user', 'sm') + 'Profil</a></div>';
+        let body = '';
+        const secD = '<section class="mt2" style="margin-top:26px"><div class="row between wrap"><div><h2 class="h2" style="font-size:22px">Produk Digital & File Kerja</h2><p class="small muted">Unduh aset, template, dan panduan PDF terverifikasi.</p></div><span class="pill">' + dig.length + ' Aset Siap Pakai</span></div><div class="g3 mt" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr));margin-top:14px">' + (dig.length ? dig.map(assetCard).join('') : '<div class="card empty" style="grid-column:1/-1">' + ic('box') + '<p>Belum ada produk digital. <a href="#/katalog/digital" style="color:var(--navy);font-weight:700">Jelajahi katalog</a> atau klaim kode di atas.</p></div>') + '</div></section>';
+        const secK = '<section class="mt2" style="margin-top:30px"><div class="row between wrap"><div><h2 class="h2" style="font-size:22px">Kelas Online Saya</h2><p class="small muted">Video modul berurutan dengan materi aplikatif praktis.</p></div>' + (kls.length > 1 ? '<select class="in" style="width:auto;min-height:42px" data-change="cls-pick">' + kls.map(k => '<option value="' + esc(k.id) + '" ' + (k.id === cid ? 'selected' : '') + '>' + esc(k.judul) + '</option>').join('') + '</select>' : '') + '</div><div class="mt" style="margin-top:14px">' + (kls.length ? player(kls.find(k => k.id === cid)) : '<div class="card empty">' + ic('cap') + '<p>Belum ada kelas. <a href="#/katalog/kelas" style="color:var(--navy);font-weight:700">Lihat kelas online</a> atau klaim kode.</p></div>') + '</div></section>';
+        const secR = '<section class="mt2" style="margin-top:26px"><div class="row between wrap"><div><h2 class="h2" style="font-size:22px">Riwayat Pesanan & Invoice</h2><p class="small muted">Status pembayaran Anda. Kode akses juga dikirim ke Gmail.</p></div></div><div class="col mt" style="margin-top:14px">' + (ord.length ? ord.map(orderRow).join('') : '<div class="card empty">' + ic('receipt') + '<p>Belum ada pesanan.</p></div>') + '</div></section>';
+        const secP = '<section class="mt2 g3" style="margin-top:26px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))"><div class="card"><h3 style="font-size:17px">Profil</h3><form data-form="profile" class="mt" style="margin-top:12px"><div class="fg"><label class="fl" for="p-n">Nama</label><input class="in" id="p-n" name="nama" required maxlength="80" value="' + esc(pr.nama) + '"></div><div class="fg"><label class="fl" for="p-w">Nomor WhatsApp</label><input class="in" id="p-w" name="wa" inputmode="tel" value="' + esc(pr.wa) + '" placeholder="081234567890"><p class="hint">Dipakai untuk notifikasi pembayaran (bila fitur WA aktif).</p></div><div class="fg"><label class="fl">Email</label><input class="in" value="' + esc(pr.email) + '" disabled></div><button class="btn nav" type="submit">Simpan Profil</button></form></div><div class="card"><h3 style="font-size:17px">Ganti Kata Sandi</h3><form data-form="chpw" class="mt" style="margin-top:12px"><div class="fg"><label class="fl" for="c-l">Kata sandi lama</label><input class="in" id="c-l" name="lama" type="password" autocomplete="current-password"><p class="hint">Kosongkan bila akun Anda dibuat lewat Google.</p></div><div class="fg"><label class="fl" for="c-b">Kata sandi baru</label><input class="in" id="c-b" name="baru" type="password" minlength="8" autocomplete="new-password" required></div><button class="btn nav" type="submit">Ganti Kata Sandi</button></form></div></section>';
+        if (tab === 'aset') body = secD; else if (tab === 'kelas') body = secK; else if (tab === 'riwayat') body = secR; else if (tab === 'profil') body = secP; else body = secD + secK + secR;
+        const help = '<div class="help mt2" style="margin-top:28px">' + ic('chat', 'lg') + '<div class="grow"><b>Kendala Redeem Akses?</b><div class="small muted">Tim ' + esc(N.appName()) + ' siap membantu via WhatsApp.</div></div>' + (N.setting('wa_admin') ? '<a class="btn nav sm" href="' + esc(N.waLink(N.setting('wa_admin'), 'Halo admin, saya ' + (pr.nama || '') + '. Mohon bantuan akses saya.')) + '" target="_blank" rel="noopener">Bantuan</a>' : '') + '</div>';
+        return '<div class="ph"><div class="eyebrow"><span class="dot"></span>Nabire Digital Access</div></div>' + hero + claim + tabs + body + help;
+      },
+      mount() {
+        const code = P.SS.get('nk.code');
+        if (code && !MS.claiming) { P.SS.del('nk.code'); setTimeout(() => claim(code), 250); }   // kode dari katalog/redeem publik → klaim otomatis sekali
+      }
+    };
+  }
+  const MEMBER_DEF = memberPage();
+  route(/^\/saya(?:\/(aset|riwayat|klaim|profil))?$/, MEMBER_DEF);
+  route(/^\/saya\/(kelas)(?:\/([\w-]+))?$/, MEMBER_DEF);
+
+  /* ---------- aksi ---------- */
+  INPUT['code-up'] = el => { const p = el.selectionStart; el.value = el.value.toUpperCase(); try { el.setSelectionRange(p, p); } catch (e) { } };
+  async function claim(kode) {
+    kode = String(kode || '').trim(); if (!kode) return toast('Masukkan kode akses.', 'err'); if (MS.claiming) return; MS.claiming = true;
+    const btn = N.$('[data-form=claim] button'); N.busy(btn, true);
+    const r = await api('code.redeem', { kode: kode }); MS.claiming = false; N.busy(btn, false);
+    if (!r.success) { toast(r.message, 'err', 5000); const i = N.$('#claim-in'); if (i) { i.value = kode; i.focus(); } return; }
+    N.sset('u', 'boot', r.data.boot); const p = r.data.product; P.SS.del('nk.auto');
+    N.modal({ title: 'Akses dibuka 🎉', body: '<div class="center"><div class="stepn" style="margin:0 auto 12px;width:56px;height:56px;border-radius:50%;background:var(--ok)">' + ic('check', 'lg') + '</div><h3 class="h2" style="font-size:20px">' + esc(p.judul) + '</h3><p class="muted mt">' + (p.tipe === 'kelas' ? 'Kelas' : 'Produk digital') + ' ini sudah masuk ke akun Anda.</p></div>', foot: '<button class="btn ghost" data-act="modal-close">Tutup</button><button class="btn pri" data-act="go" data-to="' + (p.tipe === 'kelas' ? '/saya/kelas/' + esc(p.id) : '/saya/aset') + '">Buka Sekarang</button>' });
+    go('/saya', true); N.renderRoute(true);
+  }
+  FORM.claim = f => claim(new FormData(f).get('kode'));
+  ACT['go'] = el => { N.closeModal(); go(el.getAttribute('data-to')); };
+  ACT['pdf-open'] = el => {
+    const p = (N.bootData().library || []).find(x => x.id === el.getAttribute('data-id')); if (!p) return; const emb = N.pdfEmbed(p.link_unduh);
+    N.modal({ title: p.judul, cls: 'full', body: '<iframe class="pdfv" src="' + esc(emb) + '" allow="autoplay" loading="lazy" title="' + esc(p.judul) + '"></iframe><p class="tiny muted mt">Jika PDF tidak tampil, gunakan tombol Unduh.</p>', foot: '<a class="btn soft" href="' + esc(N.dlUrl(p.link_unduh)) + '" target="_blank" rel="noopener">' + ic('download', 'sm') + 'Unduh</a><a class="btn nav" href="' + esc(p.link_unduh) + '" target="_blank" rel="noopener">' + ic('ext', 'sm') + 'Buka di tab baru</a>' });
+  };
+  ACT['vid-play'] = el => { const v = el.closest('.vid'), emb = v.getAttribute('data-emb'); if (!emb) return toast('Link video belum diisi admin.', 'err'); v.innerHTML = '<iframe src="' + esc(emb) + '&autoplay=1" allow="accelerometer; autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="Video pelajaran"></iframe>'; };
+  ACT['lesson-pick'] = el => { MS.les[el.getAttribute('data-c')] = el.getAttribute('data-id'); N.renderRoute(true); };
+  ACT['lesson-done'] = el => { const id = el.getAttribute('data-id'), p = prog(); setProg(id, !p[id]); N.renderRoute(true); };
+  INPUT['cls-pick'] = el => { MS.cls = el.value; N.renderRoute(true); };
+  FORM.profile = async f => { const d = Object.fromEntries(new FormData(f).entries()), b = f.querySelector('button'); N.busy(b, true); const r = await api('profile.save', d); N.busy(b, false); if (!r.success) return toast(r.message, 'err'); N.sset('u', 'boot', r.data); const s = S.session; s.nama = r.data.profile.nama; N.saveSession(s); toast(r.message, 'ok'); N.renderRoute(true); };
+  FORM.chpw = async f => { const d = Object.fromEntries(new FormData(f).entries()), b = f.querySelector('button'); N.busy(b, true); const r = await api('auth.changePassword', d); N.busy(b, false); if (!r.success) return toast(r.message, 'err'); f.reset(); toast(r.message, 'ok'); };
+  ACT['bukti-lihat'] = async el => {
+    const id = el.getAttribute('data-id'); N.busy(el, true); const r = await api('order.bukti', { id: id }); N.busy(el, false); if (!r.success) return toast(r.message, 'err');
+    const d = r.data; N.modal({ title: 'Bukti Pembayaran', cls: 'wide', body: d.besar ? '<p>Berkas besar. <a href="' + esc(d.url) + '" target="_blank" rel="noopener">Buka di Google Drive</a></p>' : /pdf/.test(d.mime) ? '<iframe class="pdfv" src="data:' + esc(d.mime) + ';base64,' + d.data + '"></iframe>' : '<img src="data:' + esc(d.mime) + ';base64,' + d.data + '" alt="Bukti" style="margin:0 auto;max-height:70vh;border-radius:8px">' });
+  };
+  ACT['invoice'] = el => {
+    const b = N.bootData(), o = (b.orders || []).find(x => x.id === el.getAttribute('data-id')); if (!o) return; const pr = b.profile;
+    N.modal({ title: 'Invoice ' + o.kode_order, body: '<div class="row between wrap"><div><b style="font-size:18px">' + esc(N.appName()) + '</b><div class="small muted">' + esc(N.setting('alamat')) + '</div></div><span class="pill ok">LUNAS</span></div><hr style="border:0;border-top:1px solid var(--line2);margin:14px 0"><dl class="kv"><dt>No. Invoice</dt><dd class="mono">' + esc(o.kode_order) + '</dd><dt>Tanggal</dt><dd>' + N.dtm(o.tgl_proses || o.tgl_pesan) + '</dd><dt>Pembeli</dt><dd>' + esc(pr.nama) + ' · ' + esc(pr.email) + '</dd><dt>Metode</dt><dd>' + esc(o.metode) + '</dd><dt>Kode akses</dt><dd class="mono">' + esc(o.kode_akses) + '</dd></dl><div class="sumrow mt" style="margin-top:14px"><span>' + esc(o.judul_produk) + '</span><span>' + rp(o.total) + '</span></div><div class="sumrow tot"><span>Total</span><span>' + rp(o.total) + '</span></div>', foot: '<button class="btn ghost" data-act="modal-close">Tutup</button><button class="btn nav" data-act="print">' + ic('receipt', 'sm') + 'Cetak / Simpan PDF</button>' });
+  };
+  ACT['print'] = () => w.print();
+})(window);
