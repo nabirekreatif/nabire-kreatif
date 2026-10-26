@@ -12,9 +12,10 @@
     const pk = new Uint8Array(await crypto.subtle.exportKey('pkcs8', kp.privateKey)), sp = new Uint8Array(await crypto.subtle.exportKey('spki', kp.publicKey));
     return { private: '-----BEGIN PRIVATE KEY-----\n' + b64(pk).match(/.{1,64}/g).join('\n') + '\n-----END PRIVATE KEY-----', public: b64(sp) };
   }
-  const cfgOf = (d, p) => ({ api: CFG.GAS_URL || '', pid: p.id, nama: p.judul, pub: d.key.public, owner: d.owner, beli: location.origin + location.pathname.replace(/index\.html$/, '') + '#/produk/' + p.id });
+  const baseUrl = () => location.origin + location.pathname.replace(/index\.html$/, '');
+  const cfgOf = (d, p) => { const c = { api: CFG.GAS_URL || '', pid: p.id, nama: p.judul, pub: d.key.public, owner: d.owner, beli: baseUrl() + '#/produk/' + p.id }; if (!/^file:/.test(location.protocol)) c.situs = location.origin; return c; };
   const cfgLine = c => 'window.NKL=' + JSON.stringify(c) + ';';
-  const snippet = c => '<!-- Letakkan di <head>, paling atas, sebelum skrip lain -->\n<script>' + cfgLine(c) + '</script>\n<script src="nk-license.js"></script>\n\n<!-- Jalankan aplikasi template hanya setelah lisensi terbukti -->\n<script>NKLicense.ready.then(function () { /* mulai aplikasi template di sini */ });</script>';
+  const snippet = () => '<!-- Letakkan di <head> template, paling atas -->\n<script src="nk-license.js"></script>\n\n<!-- Menu lisensi: landing page → buka  domain-anda.com/#key\n     Dasbor → tambahkan menu dengan atribut:  <a href="#" data-nk-license>Lisensi</a> -->';
   const chosen = d => d.produk.find(p => p.id === LS.pid) || d.produk[0];
   const dtf = x => x ? N.dt(x) : '—';
 
@@ -28,8 +29,8 @@
     if (!d.produk.length) return '<div class="card"><h3 style="font-size:17px">2. Pasang di template</h3><div class="alert info" style="margin-top:10px">' + ic('info') + '<span>Belum ada produk Template Web. Buat produknya dulu, isi “Link produk” dengan link Google Drive file template Anda.</span></div><button class="btn pri" data-act="lic-newprod" style="margin-top:12px">' + ic('plus', 'sm') + 'Tambah Produk Template</button></div>';
     const p = chosen(d), opts = d.produk.map(x => '<option value="' + esc(x.id) + '" ' + (x.id === p.id ? 'selected' : '') + '>' + esc(x.judul) + '</option>').join('');
     const body = !d.key.ada ? '<div class="alert warn" style="margin-top:10px">' + ic('alert') + '<span>Buat kunci lisensi (langkah 1) agar kode konfigurasi tersedia.</span></div>' :
-      '<pre class="lic-code" id="lic-snip">' + esc(snippet(cfgOf(d, p))) + '</pre><div class="row wrap" style="gap:8px"><button class="btn soft" data-act="lic-copy">' + ic('copy', 'sm') + 'Salin Kode Pasang</button><button class="btn pri" data-act="lic-dl">' + ic('download', 'sm') + 'Unduh nk-license.js</button></div>' +
-      '<ol class="lic-steps small"><li>Unduh <b>nk-license.js</b>, taruh sejajar dengan <span class="mono">index.html</span> template Anda.</li><li>Tempel dua baris <span class="mono">&lt;script&gt;</span> di atas ke <span class="mono">&lt;head&gt;</span> template (paling atas).</li><li>Bungkus kode awal aplikasi template dengan <span class="mono">NKLicense.ready.then(...)</span> agar tidak berjalan tanpa lisensi.</li><li>Unggah template ke Google Drive Anda dan tempel link-nya di “Link produk”.</li></ol>';
+      '<pre class="lic-code" id="lic-snip">' + esc(snippet()) + '</pre><div class="row wrap" style="gap:8px"><button class="btn soft" data-act="lic-copy">' + ic('copy', 'sm') + 'Salin Kode Pasang</button><button class="btn pri" data-act="lic-dl">' + ic('download', 'sm') + 'Unduh nk-license.js</button></div>' +
+      '<ol class="lic-steps small"><li>Klik <b>Unduh nk-license.js</b> (berisi konfigurasi produk ini + SDK v4).</li><li>Beri template + berkas itu ke Claude dengan skill <b>proteksi-template-nabire</b>. Skill akan menyisipkan SDK, menambah copyright, menyegel berkas, dan menambahkan menu lisensi (di dasbor, atau lewat <span class="mono">domain.com/#key</span> untuk landing page).</li><li>Unggah template ke Google Drive Anda, lalu tempel link-nya di “Link produk”.</li><li>Pembeli memasukkan kode <b>sekali</b>; setelah itu semua pengunjung tidak diminta kode. Belum aktif = tampil DEMO + link beli.</li></ol>';
     return '<div class="card"><div class="row between wrap"><h3 style="font-size:17px">2. Pasang di template</h3><select class="in" style="max-width:300px" data-input="lic-pid" aria-label="Pilih produk template">' + opts + '</select></div>' + body + '</div>';
   }
   function setCard(d) {

@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Contoh Template Web Berlisensi</title>
-<!-- 1) Konfigurasi + pengaman lisensi: paling atas di <head>.
-     Ganti dua baris ini dengan "Kode Pasang" dari Admin → Lisensi Template. -->
+<!-- Pengaman lisensi: paling atas di <head>. nk-license.js diunduh dari Admin → Lisensi Template
+     (sudah berisi konfigurasi), lalu disegel dengan nk-protect.js / skill proteksi-template-nabire. -->
 <script src="nk-license.js"></script>
 <style>
   body{margin:0;font-family:system-ui,sans-serif;background:#f6f8fb;color:#0f172a}
@@ -15,13 +15,10 @@
 </style>
 </head>
 <body>
-<header><h1 id="judul">Template Web Anda</h1><p>Halaman ini hanya tampil bila lisensi domain valid.</p></header>
-<main><div class="card" id="isi"><h2>Konten Rahasia Template</h2><p>Aplikasi template berjalan setelah <code>NKLicense.ready</code> terpenuhi.</p></div></main>
-<script>
-  /* 2) Jalankan aplikasi template Anda hanya setelah lisensi terbukti. */
-  NKLicense.ready.then(function () {
-    document.getElementById('judul').textContent = 'Template aktif di ' + NKLicense.host;
-  });
-</script>
+<header><h1 id="judul">Template Web Anda</h1><p>Belum berlisensi: tampil sebagai DEMO dengan link beli.</p></header>
+<main><div class="card" id="isi"><h2>Konten Rahasia Template</h2><p>Konten template Anda di sini.</p></div></main>
+<!-- Menu lisensi: di dasbor tambahkan  <a href="#" data-nk-license>Lisensi</a>
+     Di landing page: buka  domain-anda.com/#key -->
+<a href="#" data-nk-license style="position:fixed;top:10px;right:12px;color:#fff;font:600 13px system-ui">Lisensi</a>
 </body>
 </html>

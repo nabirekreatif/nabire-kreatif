@@ -376,7 +376,7 @@
       setH('#lbl', ic('server', 'sm') + 'NABIRE ADMIN CONSOLE');
       setH('#side-nav', SIDE_ADM.map(g => '<div class="sec-t">' + g[0] + '</div>' + g[1].map(n => '<a class="m ' + (sideOn(path, n[0]) ? 'on' : '') + '" href="#' + n[0] + '">' + ic(n[2]) + '<span>' + n[1] + '</span>' + (n[3] === 'pend' && pend ? '<span class="cnt">' + pend + '</span>' : '') + (n[3] === 'jasa' && jasa ? '<span class="cnt">' + jasa + '</span>' : '') + '</a>').join('')).join(''));
       setH('#side-foot', '<a class="m side-a" style="display:flex;gap:12px;padding:11px 14px;font-size:14px;font-weight:600;color:var(--mute)" href="#/saya">' + ic('user') + 'Lihat sebagai Member</a><a class="m side-a" style="display:flex;gap:12px;padding:11px 14px;font-size:14px;font-weight:600;color:var(--mute)" href="#/">' + ic('logout') + 'Kembali ke Portal Publik</a><button class="m side-a" style="display:flex;gap:12px;padding:11px 14px;font-size:14px;font-weight:600;color:var(--err);width:100%" data-act="logout">' + ic('logout') + 'Keluar</button>');
-      { const f = document.getElementById('side-foot'); if (f && !f.querySelector('.ver')) f.insertAdjacentHTML('beforeend', '<div class="ver small muted" style="padding:6px 14px">Versi 3.0 · Lisensi Template &amp; Link Bio baru</div>'); }
+      { const f = document.getElementById('side-foot'); if (f && !f.querySelector('.ver')) f.insertAdjacentHTML('beforeend', '<div class="ver small muted" style="padding:6px 14px">Versi 4.0 · Lisensi Template &amp; Link Bio baru</div>'); }
       setH('#acct', acctHTML());
       setH('#bnav', bnav([['/admin', 'Dasbor', 'grid'], ['/admin/persetujuan', 'Persetujuan', 'shield', pend], ['/admin/member', 'Member', 'users'], ['/admin/menu', 'Menu', 'menu']], path));
     }
